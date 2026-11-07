@@ -18,8 +18,42 @@ class FakeFile:
     metadata: dict[str, str] = field(default_factory=dict)
 
 
-def lyric(text: str = "hello", synced: bool = True) -> Lyric:
-    return Lyric(text=text, synced=synced, source="test", title="Song")
+def lyric(text: str = "hello", synced: bool = True, translation: str = "") -> Lyric:
+    return Lyric(
+        text=text,
+        synced=synced,
+        source="test",
+        title="Song",
+        translation=translation,
+    )
+
+
+def test_apply_lyric_merges_translation_when_bilingual(tmp_path: Path) -> None:
+    audio = tmp_path / "song.flac"
+    audio.write_bytes(b"")
+    file = FakeFile(str(audio))
+    bilingual = lyric(
+        text="[00:01.00]Hello", synced=True, translation="[00:01.00]你好"
+    )
+
+    apply_lyric([file], bilingual, bilingual=True)
+
+    expected = "[00:01.00]Hello\n[00:01.00]你好"
+    assert file.metadata["lyrics"] == expected
+    assert (tmp_path / "song.lrc").read_text(encoding="utf-8") == f"{expected}\n"
+
+
+def test_apply_lyric_keeps_original_when_bilingual_off(tmp_path: Path) -> None:
+    audio = tmp_path / "song.flac"
+    audio.write_bytes(b"")
+    file = FakeFile(str(audio))
+    bilingual = lyric(
+        text="[00:01.00]Hello", synced=True, translation="[00:01.00]你好"
+    )
+
+    apply_lyric([file], bilingual)
+
+    assert file.metadata["lyrics"] == "[00:01.00]Hello"
 
 
 def test_sidecar_extension() -> None:

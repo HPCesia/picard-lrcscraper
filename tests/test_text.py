@@ -5,6 +5,7 @@ from src.common.text import (
     format_duration,
     is_synced,
     lrc_timestamp,
+    merge_bilingual,
     parse_duration,
     sidecar_base,
     sidecar_path,
@@ -90,3 +91,41 @@ def test_credit_heuristic_drops_role_labels() -> None:
 def test_credit_heuristic_keeps_dialogue_lines() -> None:
     assert clean_lyrics("[00:01.00]他说：我不去") == "[00:01.00]他说：我不去"
     assert clean_lyrics("[00:01.00]Time: 4:00") == "[00:01.00]Time: 4:00"
+
+
+def test_merge_bilingual_stacks_translation_under_each_line() -> None:
+    original = "[ar:Artist]\n[00:01.00]Hello\n[00:03.00]World"
+    translation = "[00:01.00]你好\n[00:03.00]世界"
+    assert merge_bilingual(original, translation) == (
+        "[ar:Artist]\n"
+        "[00:01.00]Hello\n[00:01.00]你好\n"
+        "[00:03.00]World\n[00:03.00]世界"
+    )
+
+
+def test_merge_bilingual_tolerates_small_drift() -> None:
+    assert merge_bilingual("[00:01.00]Hello", "[00:01.20]你好") == (
+        "[00:01.00]Hello\n[00:01.00]你好"
+    )
+
+
+def test_merge_bilingual_drops_translations_without_a_match() -> None:
+    merged = merge_bilingual(
+        "[00:01.00]Hello\n[00:05.00]Bye",
+        "[00:01.00]你好\n[00:09.00]再见",
+    )
+    assert merged == "[00:01.00]Hello\n[00:01.00]你好\n[00:05.00]Bye"
+
+
+def test_merge_bilingual_returns_original_without_timed_translation() -> None:
+    original = "[00:01.00]Hello"
+    assert merge_bilingual(original, "") == original
+    assert merge_bilingual(original, "no time tags here") == original
+
+
+def test_merge_bilingual_repeats_translation_for_each_time_tag() -> None:
+    merged = merge_bilingual(
+        "[00:01.00][00:10.00]Hello",
+        "[00:01.00]你好\n[00:10.00]你好",
+    )
+    assert merged == "[00:01.00][00:10.00]Hello\n[00:01.00]你好\n[00:10.00]你好"

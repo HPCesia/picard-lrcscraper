@@ -116,6 +116,26 @@ def test_netease_lyric_rejects_empty_payload() -> None:
     assert parse_lyric({}, Candidate("netease", "Song")) is None
 
 
+def test_netease_lyric_carries_translation() -> None:
+    response = {
+        "lrc": {"lyric": "[00:02.00]Hello\n[00:04.00]World"},
+        "tlyric": {"lyric": "[00:02.00]你好\n[00:04.00]世界"},
+    }
+    lyric = parse_lyric(response, Candidate("netease", "Song"))
+    assert lyric is not None
+    assert lyric.translation == "[00:02.00]你好\n[00:04.00]世界"
+
+
+def test_netease_ignores_untimed_or_missing_translation() -> None:
+    untimed = {
+        "lrc": {"lyric": "[00:02.00]Hello"},
+        "tlyric": {"lyric": "你好"},
+    }
+    assert parse_lyric(untimed, Candidate("netease", "Song")).translation == ""
+    plain = {"lrc": {"lyric": "[00:02.00]Hello"}}
+    assert parse_lyric(plain, Candidate("netease", "Song")).translation == ""
+
+
 def test_kugou_signature_is_stable_and_uses_secret() -> None:
     assert sign("abc") == sign("abc")
     assert sign("abc") != sign("abd")

@@ -46,13 +46,17 @@ class Candidate:
 
 @dataclass(frozen=True)
 class Lyric:
-    """Lyrics from a source. `synced` says whether they carry LRC timestamps."""
+    """Lyrics from a source. `synced` says whether they carry LRC timestamps.
+
+    `translation` holds the same lines translated, timed as LRC.
+    """
 
     text: str
     synced: bool
     source: str
     title: str = ""
     artist: str = ""
+    translation: str = ""
 
     @property
     def is_empty(self) -> bool:

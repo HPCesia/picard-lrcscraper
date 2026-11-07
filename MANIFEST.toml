@@ -16,4 +16,6 @@ Sources are queried one after another in the order you choose, and the first pro
 
 Lyrics are written to the `lyrics` tag and, optionally, to a `.lrc` or `.txt` sidecar file next to the audio file.
 
+Translations from a source can be merged into a bilingual `.lrc`, an option that is off by default.
+
 Scraping can run when a track is loaded, when a file is saved, or on demand from the track and album context menus. A manual mode lets you pick between the ranked search results before anything is written."""

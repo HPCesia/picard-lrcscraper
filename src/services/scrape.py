@@ -78,6 +78,7 @@ def store_lyric(api: PluginApi, files: list[Any], lyric: Lyric, policy: str) -> 
         lyric,
         save_sidecar=bool(api.plugin_config["save_lrc_file"]),
         plain_as_txt=bool(api.plugin_config["plain_as_txt"]),
+        bilingual=bool(api.plugin_config["bilingual_lyrics"]),
     )
     for error in errors:
         api.logger.warning(f"{label}: could not write lyrics sidecar: {error}")

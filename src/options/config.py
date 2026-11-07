@@ -22,6 +22,11 @@ FLAGS: tuple[FlagOption, ...] = (
     FlagOption("get_on_save", "Fetch lyrics when a file is saved", False),
     FlagOption("prefer_synced", "Prefer synchronized lyrics", True),
     FlagOption(
+        "bilingual_lyrics",
+        "Merge translations under the lyrics (bilingual LRC)",
+        False,
+    ),
+    FlagOption(
         "save_lrc_file", "Write a lyric sidecar file next to the audio file", True
     ),
     FlagOption("plain_as_txt", "Save plain lyrics as .txt instead of .lrc", False),

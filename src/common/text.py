@@ -4,7 +4,10 @@ import os
 import re
 
 _TIME_TAG_RE = re.compile(r"\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]")
+_TIME_TAG_PARTS_RE = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
+_LEADING_TAGS_RE = re.compile(r"^(?:\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\])+")
 _JUNK_TAG_RE = re.compile(r"^\[(id|by|hash|krc|sign|qq|total|language):", re.IGNORECASE)
+BILINGUAL_TOLERANCE = 0.3
 _CREDIT_LABEL_RE = re.compile(r"^(?P<label>[^\s:：]{1,8})\s*[:：]\s*\S")
 _CREDIT_LABEL_SUFFIXES = (
     "词",
@@ -139,6 +142,73 @@ def clean_lyrics(text: str) -> str:
     while kept and kept[-1] == "":
         kept.pop()
     return "\n".join(kept)
+
+
+def _tag_seconds(tag: str) -> float | None:
+    match = _TIME_TAG_PARTS_RE.fullmatch(tag)
+    if match is None:
+        return None
+    minutes, seconds, fraction = match.groups()
+    fraction_seconds = int(fraction) / 10 ** len(fraction) if fraction else 0.0
+    return int(minutes) * 60 + int(seconds) + fraction_seconds
+
+
+def _leading_tags(line: str) -> list[str]:
+    match = _LEADING_TAGS_RE.match(line)
+    if match is None:
+        return []
+    return _TIME_TAG_RE.findall(match.group(0))
+
+
+def _timed_lines(text: str) -> list[tuple[float, str]]:
+    """Split LRC text into `(seconds, content)` pairs, sorted by time."""
+    entries: list[tuple[float, str]] = []
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    for raw in normalized.split("\n"):
+        tags = _leading_tags(raw)
+        if not tags:
+            continue
+        seconds = _tag_seconds(tags[0])
+        content = _TIME_TAG_RE.sub("", raw).strip()
+        if seconds is None or not content:
+            continue
+        entries.append((seconds, content))
+    entries.sort(key=lambda item: item[0])
+    return entries
+
+
+def merge_bilingual(
+    original: str, translation: str, tolerance: float = BILINGUAL_TOLERANCE
+) -> str:
+    """Write the original lines with each matching translated line beneath them.
+
+    A translated line reuses the original's timestamp so players stack equal
+    timestamps. Translations within `tolerance` seconds pair with a line;
+    unmatched ones are dropped rather than shown on the wrong line.
+    """
+    translated = _timed_lines(translation)
+    if not original or not translated:
+        return original
+    pointer = 0
+    merged: list[str] = []
+    for raw in original.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        merged.append(raw)
+        for tag in _leading_tags(raw):
+            seconds = _tag_seconds(tag)
+            if seconds is None:
+                continue
+            while (
+                pointer < len(translated)
+                and translated[pointer][0] < seconds - tolerance
+            ):
+                pointer += 1
+            if pointer >= len(translated):
+                break
+            if abs(translated[pointer][0] - seconds) <= tolerance:
+                content = translated[pointer][1]
+                pointer += 1
+                merged.append(f"{tag}{content}")
+    return "\n".join(merged)
 
 
 def sidecar_base(audio_path: str) -> str:

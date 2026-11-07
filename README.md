@@ -18,7 +18,7 @@ what Picard ships.
 | Source | Search | Synced lyrics | Notes |
 | --- | --- | --- | --- |
 | [LRCLIB](https://lrclib.net) | title, plus artist when known | yes | crowd-sourced, strongest for Western releases |
-| [NetEase Cloud Music](https://music.163.com) | keyword | yes | strongest for Chinese releases |
+| [NetEase Cloud Music](https://music.163.com) | keyword | yes | strongest for Chinese releases, often ships translations |
 | [Kugou](https://www.kugou.com) | keyword | yes | Chinese releases |
 | [Kuwo](https://www.kuwo.cn) | keyword | yes | Chinese releases, often has the song without lyrics |
 | [Lyrics.ovh](https://lyrics.ovh) | artist and title | no | plain text only, skipped when the track has no artist |
@@ -47,12 +47,15 @@ without notice.
   are queried top to bottom. Use *Move Up*/*Move Down* or drag to reorder, and
   *Restore Defaults* to go back to the shipped order. Uncheck a source to skip
   it.
-- **Fetch lyrics when a track is loaded:** scrape as soon as a file is added to a
-  track. Existing lyrics are kept.
+- **Fetch lyrics when a track is loaded:** scrape as soon as a file is added to
+  a track. Existing lyrics are kept.
 - **Fetch lyrics when a file is saved:** fill in lyrics missing at save time,
   then save the file again so the new tag reaches the file. Existing lyrics are
   kept.
 - **Prefer synchronized lyrics:** take the timed version when a provider has both.
+- **Merge translations under the lyrics:** write a bilingual lyric, each
+  translated line under the original it translates. Off by default. Only NetEase
+  returns translations, and only for timed lyrics.
 - **Write a lyric sidecar file:** write `<track>.lrc` next to the audio file.
 - **Save plain lyrics as .txt:** use `.txt` for lyrics without timestamps. Timed
   lyrics always go to `.lrc`.
@@ -82,6 +85,9 @@ Right click a track or an album:
   anyway, so a read-only folder still gets lyrics.
 - Credit lines (`作词 : …`, `Produced by …`), provider notices and stray
   `[id:…]`/`[by:…]` tags are stripped. The lyric text itself is left alone.
+- With translations merged, each translated line reuses the original's
+  timestamp, so players that stack equal timestamps show both rows. A translation
+  landing more than 0.3 seconds from any original line is dropped.
 - Up to three hits per provider, highest ranked first, are tried before the next
   provider is consulted.
 - Instrumental tracks, empty responses and unreadable responses all fall through

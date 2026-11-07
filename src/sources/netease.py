@@ -94,7 +94,16 @@ def parse_lyric(response: Any, candidate: Candidate) -> Lyric | None:
         source=NeteaseSource.ID,
         title=candidate.title,
         artist=candidate.artist,
+        translation=parse_translation(response),
     )
+
+
+def parse_translation(response: dict[str, Any]) -> str:
+    """Return the timed translation, or "" when NetEase has none."""
+    raw = (response.get("tlyric") or {}).get("lyric") or ""
+    if not is_synced(raw):
+        return ""
+    return clean_lyrics(str(raw))
 
 
 class NeteaseSource(Source):
