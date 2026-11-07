@@ -1,0 +1,12 @@
+exclude = ["build", "dist", ".git", "__pycache__", "picard-lib"]
+
+[lint]
+extend-select = ["ANN", "B", "UP", "SIM"]
+# N999: the plugin directory itself is hyphenated (Picard plugin layout)
+# BLE001/ANN401: broad catches and Any are intentional at plugin and Qt
+# boundaries
+# I001: import layout differs between local and CI ruff versions
+ignore = ["N999", "BLE001", "ANN401", "I001"]
+
+[lint.per-file-ignores]
+"__init__.py" = ["ANN", "D"]

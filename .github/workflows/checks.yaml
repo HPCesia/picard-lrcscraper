@@ -1,0 +1,75 @@
+name: Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-cursor0 \
+            libxcb-xinerama0 \
+            libxcb-xfixes0 \
+            libegl1 \
+            libgl1
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install PyQt6 mutagen PyYAML pytest ruff
+
+      - name: Clone picard
+        run: git clone --depth 1 https://github.com/metabrainz/picard.git picard-lib
+
+      - name: Run ruff
+        run: ruff check
+
+      - name: Validate MANIFEST.toml
+        run: |
+          PYTHONPATH=picard-lib python - <<'EOF'
+          import tomllib
+          from picard.plugin3.validator import validate_manifest_dict
+
+          with open('MANIFEST.toml', 'rb') as handle:
+              errors = validate_manifest_dict(tomllib.load(handle))
+          assert not errors, errors
+          print('MANIFEST valid')
+          EOF
+
+      - name: Smoke test plugin import
+        env:
+          QT_QPA_PLATFORM: offscreen
+          PYTHONPATH: picard-lib
+        run: |
+          mkdir -p _smoke
+          git archive HEAD | tar -x -C _smoke
+          python -c "from _smoke import enable, disable; print('import + entry point OK')"
+          rm -rf _smoke
+
+      - name: Run tests
+        run: pytest

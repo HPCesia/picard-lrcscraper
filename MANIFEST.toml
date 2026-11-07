@@ -1,0 +1,19 @@
+uuid = "6f0f7dd2-4a13-4b7f-9a5e-21f3c6c1d8b4"
+name = "LRC Scraper"
+authors = ["HPCesia"]
+description = """Scrape lyrics from several providers, with a configurable priority order"""
+api = ["3.0"]
+license = "GPL-3.0-or-later"
+license_url = "https://spdx.org/licenses/GPL-3.0-or-later.html"
+version = "0.1.0"
+homepage = "https://github.com/HPCesia/picard-lrcscraper"
+report_bugs_to = "https://github.com/HPCesia/picard-lrcscraper/issues"
+categories = ["metadata"]
+min_python_version = "3.10"
+long_description = """Fetch lyrics for your tracks from LRCLIB, NetEase Cloud Music, Kugou, Kuwo and Lyrics.ovh.
+
+Sources are queried one after another in the order you choose, and the first provider returning lyrics wins. Each source can be disabled, re-ordered and scored with a minimum match threshold.
+
+Lyrics are written to the `lyrics` tag and, optionally, to a `.lrc` or `.txt` sidecar file next to the audio file.
+
+Scraping can run when a track is loaded, when a file is saved, or on demand from the track and album context menus. A manual mode lets you pick between the ranked search results before anything is written."""
