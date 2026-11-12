@@ -88,6 +88,19 @@ def test_credit_heuristic_drops_role_labels() -> None:
     assert clean_lyrics(raw) == "[00:04.00]真实歌词"
 
 
+def test_credit_heuristic_drops_bilingual_role_labels() -> None:
+    raw = (
+        "[00:00.00]作曲 Composer：温菁 Jing.W\n"
+        "[00:01.00]小提琴 Violin：刘星 / 刘沁妤\n"
+        "[00:02.00]萨克斯 Sax：李世海\n"
+        "[00:03.00]I woke up to the fire,\n"
+        "[00:04.00]我随焰火醒来"
+    )
+    assert clean_lyrics(raw) == (
+        "[00:03.00]I woke up to the fire,\n[00:04.00]我随焰火醒来"
+    )
+
+
 def test_credit_heuristic_keeps_dialogue_lines() -> None:
     assert clean_lyrics("[00:01.00]他说：我不去") == "[00:01.00]他说：我不去"
     assert clean_lyrics("[00:01.00]Time: 4:00") == "[00:01.00]Time: 4:00"
@@ -97,9 +110,7 @@ def test_merge_bilingual_stacks_translation_under_each_line() -> None:
     original = "[ar:Artist]\n[00:01.00]Hello\n[00:03.00]World"
     translation = "[00:01.00]你好\n[00:03.00]世界"
     assert merge_bilingual(original, translation) == (
-        "[ar:Artist]\n"
-        "[00:01.00]Hello\n[00:01.00]你好\n"
-        "[00:03.00]World\n[00:03.00]世界"
+        "[ar:Artist]\n[00:01.00]Hello\n[00:01.00]你好\n[00:03.00]World\n[00:03.00]世界"
     )
 
 

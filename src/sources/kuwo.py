@@ -11,7 +11,10 @@ from ..common.text import clean_lyrics, is_synced, lrc_timestamp
 from .base import Session, Source
 
 SEARCH_URL = "https://search.kuwo.cn/r.s"
-LYRIC_URL = "https://m.kuwo.cn/newh5/singles/songinfoandlrc"
+LYRIC_URLS = (
+    "https://www.kuwo.cn/openapi/v1/www/lyric/getlyric",
+    "https://m.kuwo.cn/newh5/singles/songinfoandlrc",
+)
 HEADERS = {
     "Referer": "https://m.kuwo.cn/",
     "User-Agent": (
@@ -45,6 +48,8 @@ class KuwoSession(Session):
     def __init__(self, query: Query, options: SessionOptions) -> None:
         self.query = query
         self.options = options
+        self._rid = ""
+        self._url_index = 0
 
     def begin_search(self) -> Request:
         return Request(
@@ -71,16 +76,30 @@ class KuwoSession(Session):
     def begin_fetch(self, candidate: Candidate) -> Request | None:
         rid = candidate.payload.get("rid")
         if not rid:
+            self._rid = ""
             return None
+        self._rid = str(rid)
+        self._url_index = 0
+        return self._lyric_request()
+
+    def _lyric_request(self) -> Request:
         return Request(
-            url=LYRIC_URL,
-            queryargs={"musicId": str(rid), "httpsStatus": "1"},
+            url=LYRIC_URLS[self._url_index],
+            queryargs={"musicId": self._rid, "httpsStatus": "1"},
             headers=HEADERS,
             response_type=None,
         )
 
-    def handle_fetch(self, response: Any, candidate: Candidate) -> Lyric | None:
-        return parse_lyric(response, candidate)
+    def handle_fetch(
+        self, response: Any, candidate: Candidate
+    ) -> Request | Lyric | None:
+        lyric = parse_lyric(response, candidate)
+        if lyric is not None or not self._rid:
+            return lyric
+        self._url_index += 1
+        if self._url_index >= len(LYRIC_URLS):
+            return None
+        return self._lyric_request()
 
 
 def parse_search(response: Any) -> list[Candidate]:

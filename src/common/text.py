@@ -52,6 +52,7 @@ _CREDIT_BY_RE = re.compile(
     r"\s+by\b",
     re.IGNORECASE,
 )
+_CREDIT_DUAL_RE = re.compile(r"^[\u4e00-\u9fff]{1,8}\s+[A-Za-z][^:：]{0,30}[:：]\s*\S")
 _NOISE_MARKERS = (
     "以下歌词翻译",
     "歌词翻译由",
@@ -106,6 +107,8 @@ def lrc_timestamp(seconds: float) -> str:
 
 def _looks_like_credit(content: str) -> bool:
     """Credit lines put a short role label before a colon. Lyric lines rarely do."""
+    if _CREDIT_DUAL_RE.match(content):
+        return True
     match = _CREDIT_LABEL_RE.match(content)
     if match is None:
         return False

@@ -4,7 +4,7 @@ import base64
 import json
 
 
-from src.common.models import Candidate, Query, SessionOptions
+from src.common.models import Candidate, Query, Request, SessionOptions
 from src.sources.kugou import (
     KugouSession,
     build_search_queryargs,
@@ -219,6 +219,49 @@ def test_kuwo_lyric_builds_lrc_from_lines() -> None:
     assert lyric is not None
     assert lyric.text == "[01:01.50]Hello"
     assert lyric.synced
+
+
+def test_kuwo_keeps_bilingual_lines_as_returned() -> None:
+    payload = json.dumps(
+        {
+            "code": 200,
+            "data": {
+                "lrclist": [
+                    {"lineLyric": "I woke up to the fire,", "time": "23.33"},
+                    {"lineLyric": "我随焰火醒来", "time": "25.28"},
+                ]
+            },
+        }
+    )
+    lyric = KuwoSession(Query("Song"), OPTIONS).handle_fetch(
+        payload, Candidate("kuwo", "Song")
+    )
+    assert lyric is not None
+    assert lyric.text == "[00:23.33]I woke up to the fire,\n[00:25.28]我随焰火醒来"
+
+
+def test_kuwo_fetches_lyrics_from_web_endpoint_first() -> None:
+    session = KuwoSession(Query("Song"), OPTIONS)
+    request = session.begin_fetch(Candidate("kuwo", "Song", payload={"rid": "123"}))
+    assert isinstance(request, Request)
+    assert request.url == "https://www.kuwo.cn/openapi/v1/www/lyric/getlyric"
+    assert request.queryargs == {"musicId": "123", "httpsStatus": "1"}
+
+
+def test_kuwo_falls_back_to_mobile_endpoint() -> None:
+    session = KuwoSession(Query("Song"), OPTIONS)
+    candidate = Candidate("kuwo", "Song", payload={"rid": "123"})
+    session.begin_fetch(candidate)
+
+    fallback = session.handle_fetch({"data": None, "msg": "音乐查询失败"}, candidate)
+    assert isinstance(fallback, Request)
+    assert fallback.url == "https://m.kuwo.cn/newh5/singles/songinfoandlrc"
+
+    payload = json.dumps({"data": {"lrclist": [{"lineLyric": "Hello", "time": "1.5"}]}})
+    lyric = session.handle_fetch(payload, candidate)
+    assert lyric is not None
+    assert lyric.text == "[00:01.50]Hello"
+    assert session.handle_fetch("still empty", candidate) is None
 
 
 def test_kuwo_empty_response_returns_none() -> None:
